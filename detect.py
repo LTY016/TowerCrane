@@ -5,7 +5,7 @@ import torch
 from ultralytics import YOLO
 
 # ========== GitHub에서 모델 다운로드 ==========
-MODEL_URL = "https://raw.githubusercontent.com/유저명/타워크레인/main/best.pt"
+MODEL_URL = "https://github.com/LTY016/TowerCrane.git"
 MODEL_PATH = "best.pt"
 
 def download_model():
@@ -65,7 +65,7 @@ def main():
                 cls_name = model.names[int(box.cls)]
 
                 # 레고 피규어 클래스 이름에 맞게 수정!
-                if cls_name == "person" or cls_name == "lego":
+                if cls_name == "person"
                     detected_now = True
 
                     # 감지 박스 그리기
