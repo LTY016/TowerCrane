@@ -9,7 +9,6 @@
  * IN2  → 아두이노 D6
  * ENA  → 아두이노 D9 (PWM)
  * 버튼 → 아두이노 D2
- * LED  → 아두이노 D13 (상태 표시)
  */
 
 // ========== 핀 정의 ==========
@@ -17,7 +16,6 @@ const int IN1_PIN     = 5;   // L298N IN1 (모터 드라이버 입력 1)
 const int IN2_PIN     = 6;   // L298N IN2 (모터 드라이버 입력 2)
 const int ENA_PIN     = 9;   // L298N ENA (PWM 속도제어 핀)
 const int BUTTON_PIN  = 2;   // 컨트롤러 버튼 핀
-const int LED_PIN     = 13;  // 상태 표시 LED 핀
 
 // ========== 모터 설정 ==========
 const int MOTOR_SPEED = 200; // 모터 속도 (0~255, ENA 핀에 적용)
@@ -39,7 +37,6 @@ void setup() {
   pinMode(IN2_PIN,    OUTPUT);
   pinMode(ENA_PIN,    OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP); // 내부 풀업 저항 사용
-  pinMode(LED_PIN,    OUTPUT);
 
   motorStop(); // 초기 모터 정지
 
@@ -57,9 +54,6 @@ void loop() {
 
   // 3. 모터 제어 로직
   controlMotor();
-
-  // 4. LED 상태 표시
-  updateLED();
 
   delay(50); // 짧은 지연으로 안정적인 동작 유지
 }
@@ -141,18 +135,4 @@ void motorStop() {
   digitalWrite(IN2_PIN, LOW);
   analogWrite(ENA_PIN, 0); // 모터 속도 0
   Serial.println("[MOTOR] 정지");
-}
-
-// ========== LED 상태 표시 ==========
-void updateLED() {
-  if (humanDetected) {
-    // 사람 감지 → 빠른 점멸 (경고)
-    digitalWrite(LED_PIN, (millis() / 200) % 2);
-  } else if (motorRunning) {
-    // 모터 동작 중 → 켜짐
-    digitalWrite(LED_PIN, HIGH);
-  } else {
-    // 대기 중 (사람 없음, 모터 정지) → 느린 점멸
-    digitalWrite(LED_PIN, (millis() / 800) % 2);
-  }
 }
