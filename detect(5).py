@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 # ========== 아두이노 시리얼 연결 ==========
 # 포트 확인 방법: ls /dev/ttyUSB* 또는 ls /dev/ttyACM*
 try:
-    arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+    arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
     time.sleep(2)
     log.info("아두이노 시리얼 연결 완료 (/dev/ttyUSB0)")
 except Exception as e:
