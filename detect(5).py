@@ -39,7 +39,7 @@ config = picam2.create_preview_configuration(
 )
 picam2.configure(config)
 picam2.start()
-time.sleep(1)
+time.sleep(3)
 log.info("Camera Module 3 ready")
  
 # ========== YOLOv8 모델 로드 ==========
