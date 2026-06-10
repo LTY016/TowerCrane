@@ -62,7 +62,7 @@ except ImportError:
  
 # ========== YOLOv8 모델 로드 ==========
 MODEL_PATH   = "best.pt"
-TARGET_CLASS = "LEGO-toys"
+TARGET_CLASS = "person"
  
 try:
     model = YOLO(MODEL_PATH)
