@@ -43,10 +43,7 @@ try:
     time.sleep(2)
     log.info("카메라 모듈3 초기화 완료")
  
-    def get_frame():
-        frame = picam2.capture_array()
-        return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
- 
+
 except ImportError:
     log.error("Picamera2 없음! 설치: sudo apt install python3-picamera2")
     sys.exit(1)
@@ -69,7 +66,7 @@ ZONE_X1, ZONE_Y1 = 150, 100
 ZONE_X2, ZONE_Y2 = 500, 400
  
 # ========== 상태 변수 ==========
-FRAME_SKIP   = 2
+FRAME_SKIP   = 3
 frame_count  = 0
 last_results = []
 prev_danger  = False
@@ -90,7 +87,10 @@ def send_signal(danger: bool):
         log.warning(f"▶ 신호 전송: {'DANGER → 모터 정지' if danger else 'SAFE → 모터 재가동'}")
     except Exception as e:
         log.error(f"시리얼 전송 오류: {e}")
- 
+        def get_frame():
+            frame = picam2.capture_array()
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            return frame 
 # ========== 메인 루프 ==========
 log.info("===== 타워크레인 안전 시스템 시작 =====")
 log.info("종료: q 키")
@@ -102,7 +102,7 @@ try:
         height, width = frame.shape[:2]
  
         if frame_count % FRAME_SKIP == 0:
-            last_results = model(frame, conf=0.5, verbose=False)
+            last_results = model(frame, conf=0.5, imgsz=640  ,verbose=False)
         results = last_results
  
         obj_count       = 0
@@ -136,11 +136,11 @@ try:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, zone_color, 2)
  
         # 감지 수
-        cv2.putText(frame, f"LEGO : {obj_count}개", (10, 40),
+        cv2.putText(frame, f"LEGO : {obj_count}", (10, 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 2)
  
         # 위험/안전
-        status, color = ("위험! 모터정지", (0, 0, 255)) if danger_detected else ("안전 가동중", (0, 255, 0))
+        status, color = ("DANGER", (0, 0, 255)) if danger_detected else ("SAFE", (0, 255, 0))
         text_size = cv2.getTextSize(status, cv2.FONT_HERSHEY_SIMPLEX, 1.0, 2)[0]
         text_x    = width - text_size[0] - 20
         cv2.putText(frame, status, (text_x, 40),
