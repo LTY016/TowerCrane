@@ -43,10 +43,16 @@ try:
     time.sleep(2)
     log.info("카메라 모듈3 초기화 완료")
  
-
 except ImportError:
     log.error("Picamera2 없음! 설치: sudo apt install python3-picamera2")
     sys.exit(1)
+ 
+ 
+def get_frame():
+    frame = picam2.capture_array()
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    return frame
+ 
  
 # ========== YOLOv8 모델 로드 ==========
 MODEL_PATH   = "best.pt"
@@ -71,10 +77,12 @@ frame_count  = 0
 last_results = []
 prev_danger  = False
  
+ 
 def is_in_zone(x1, y1, x2, y2):
     cx = (x1 + x2) // 2
     cy = (y1 + y2) // 2
     return ZONE_X1 < cx < ZONE_X2 and ZONE_Y1 < cy < ZONE_Y2
+ 
  
 def send_signal(danger: bool):
     global prev_danger
@@ -87,10 +95,8 @@ def send_signal(danger: bool):
         log.warning(f"▶ 신호 전송: {'DANGER → 모터 정지' if danger else 'SAFE → 모터 재가동'}")
     except Exception as e:
         log.error(f"시리얼 전송 오류: {e}")
-        def get_frame():
-            frame = picam2.capture_array()
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            return frame 
+ 
+ 
 # ========== 메인 루프 ==========
 log.info("===== 타워크레인 안전 시스템 시작 =====")
 log.info("종료: q 키")
@@ -102,7 +108,7 @@ try:
         height, width = frame.shape[:2]
  
         if frame_count % FRAME_SKIP == 0:
-            last_results = model(frame, conf=0.5, imgsz=640  ,verbose=False)
+            last_results = model(frame, conf=0.5, imgsz=640, verbose=False)
         results = last_results
  
         obj_count       = 0
@@ -159,4 +165,3 @@ finally:
     picam2.stop()
     cv2.destroyAllWindows()
     log.info("===== 시스템 종료 =====")
- 
