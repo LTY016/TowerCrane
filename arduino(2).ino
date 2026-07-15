@@ -6,23 +6,21 @@
 */
 
 // ========== 핀 설정 ==========
-// L298N 모터 드라이버
-const int MOTOR_IN1 = 8;   // 모터 방향 A
-const int MOTOR_IN2 = 9;   // 모터 방향 B
-const int MOTOR_ENA = 10;  // 모터 속도 (PWM)
-
-// LED / 부저
-const int LED_DANGER = 5;  // 빨간 LED
-const int LED_SAFE   = 6;  // 초록 LED
-const int BUZZER     = 7;  // 부저
+const int MOTOR_IN1 = 8;
+const int MOTOR_IN2 = 9;
+const int MOTOR_ENA = 10;
+const int LED_DANGER = 5;
+const int LED_SAFE   = 6;
+const int BUZZER     = 7;
 
 // ========== 상태 변수 ==========
 bool isDanger = false;
+unsigned long lastBuzzerTime = 0;
+bool buzzerState = false;
 
 void setup() {
-  Serial.begin(9600);  // 라즈베리파이와 통신 속도 (반드시 일치)
+  Serial.begin(9600);
 
-  // 핀 모드 설정
   pinMode(MOTOR_IN1, OUTPUT);
   pinMode(MOTOR_IN2, OUTPUT);
   pinMode(MOTOR_ENA, OUTPUT);
@@ -30,46 +28,60 @@ void setup() {
   pinMode(LED_SAFE,   OUTPUT);
   pinMode(BUZZER,     OUTPUT);
 
-  // 시작 시 안전 상태로 초기화
   motorStart();
   safeMode();
-
   Serial.println("아두이노 초기화 완료");
 }
 
 void loop() {
-  // 라즈베리파이에서 신호 수신
+  // ========== 시리얼 수신 ==========
   if (Serial.available() > 0) {
     String signal = Serial.readStringUntil('\n');
-    signal.trim();  // 공백/개행 제거
+    signal.trim();
 
-    if (signal == "DANGER") {
+    if (signal == "DANGER" && !isDanger) {
       isDanger = true;
       motorStop();
       dangerMode();
+      Serial.println("DANGER 수신 → 모터 정지");
     }
-    else if (signal == "SAFE") {
+    else if (signal == "SAFE" && isDanger) {
       isDanger = false;
       motorStart();
       safeMode();
+      Serial.println("SAFE 수신 → 모터 재가동");
     }
   }
 
-  // 위험 상태일 때 부저 반복 (삐삐삐)
+  // ========== 부저 논블로킹 처리 ==========
+  // delay() 대신 millis() 사용 → 시리얼 수신 지연 없음
   if (isDanger) {
-    tone(BUZZER, 1000, 200);   // 200ms 삐
-    delay(400);
+    unsigned long now = millis();
+    if (!buzzerState && now - lastBuzzerTime >= 400) {
+      tone(BUZZER, 1000, 200);
+      buzzerState = true;
+      lastBuzzerTime = now;
+    }
+    else if (buzzerState && now - lastBuzzerTime >= 200) {
+      buzzerState = false;
+      lastBuzzerTime = now;
+    }
   }
 }
 
 // ========== 모터 제어 ==========
 void motorStart() {
-  analogWrite(MOTOR_ENA, 200);  // 속도 (0~255)
+  // 부드럽게 시작 (0 → 200)
   digitalWrite(MOTOR_IN1, HIGH);
   digitalWrite(MOTOR_IN2, LOW);
+  for (int speed = 0; speed <= 200; speed += 10) {
+    analogWrite(MOTOR_ENA, speed);
+    delay(20);
+  }
 }
 
 void motorStop() {
+  // 즉시 정지
   analogWrite(MOTOR_ENA, 0);
   digitalWrite(MOTOR_IN1, LOW);
   digitalWrite(MOTOR_IN2, LOW);
@@ -85,5 +97,5 @@ void safeMode() {
   digitalWrite(LED_DANGER, LOW);
   digitalWrite(LED_SAFE,   HIGH);
   noTone(BUZZER);
+  buzzerState = false;
 }
-
