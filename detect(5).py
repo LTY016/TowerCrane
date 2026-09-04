@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 타워크레인 안전 시스템 - 라즈베리파이5
-카메라모듈3 x1 → YOLOv8 사람(PERSON) 감지 → 아두이노 시리얼 신호 전송
+카메라모듈3 x1 → YOLOv8 사람(Person) 감지 → 아두이노 시리얼 신호 전송
 """
 
 import logging
@@ -38,7 +38,8 @@ try:
   picam2 = Picamera2(0)
   picam2.configure(
       picam2.create_preview_configuration(
-          main={"size": (640, 480), "format": "RGB888"}
+          # [수정포인트 1] 색상 반전 해결을 위해 format을 'BGR888'로 변경
+          main={"size": (640, 480), "format": "BGR888"}
       )
   )
   picam2.start()
@@ -52,7 +53,7 @@ except ImportError:
 
 def get_frame():
   frame = picam2.capture_array()
-  frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+  # [수정포인트 1] 위에서 BGR888로 바로 받으므로, 색상을 꼬이게 하던 cvtColor 변환 줄을 삭제했습니다.
   return frame
 
 
@@ -132,10 +133,11 @@ try:
             box_color = (255, 165, 0)
 
           cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 2)
-          # [수정] LEGO -> PERSON 로 변경
+          
+          # [수정포인트 2] 대소문자 맞춰서 Person 으로 변경
           cv2.putText(
               frame,
-              f"PERSON {confidence:.0%}",
+              f"Person {confidence:.0%}",
               (x1, y1 - 10),
               cv2.FONT_HERSHEY_SIMPLEX,
               0.7,
@@ -160,10 +162,10 @@ try:
         2,
     )
 
-    # [수정] 감지 수 문구 LEGO -> PERSON 로 변경
+    # [수정포인트 2] 좌상단 감지 개수 텍스트도 Person 으로 변경
     cv2.putText(
         frame,
-        f"PERSON : {obj_count}",
+        f"Person : {obj_count}",
         (10, 40),
         cv2.FONT_HERSHEY_SIMPLEX,
         1.2,
