@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-타워크레인 안전 시스템 - 라즈베리파이5
+타워크레인 안전 시스템 - 라즈베리파이5 (색상 반전 최종 수정판)
 카메라모듈3 x1 → YOLOv8 사람(Person) 감지 → 아두이노 시리얼 신호 전송
 """
 
@@ -38,13 +38,14 @@ try:
   picam2 = Picamera2(0)
   picam2.configure(
       picam2.create_preview_configuration(
-          # [수정포인트 1] 색상 반전 해결을 위해 format을 'BGR888'로 변경
-          main={"size": (640, 480), "format": "BGR888"}
+          # [최종 수정] 포맷을 기본값인 RGB888로 다시 변경합니다.
+          # 라즈베리파이5 하드웨어 설정에 따라 BGR888이 안 먹힐 수 있습니다.
+          main={"size": (640, 480), "format": "RGB888"}
       )
   )
   picam2.start()
   time.sleep(2)
-  log.info("카메라 모듈3 초기화 완료")
+  log.info("카메라 모듈3 초기화 완료 (RGB 포맷)")
 
 except ImportError:
   log.error("Picamera2 없음! 설치: sudo apt install python3-picamera2")
@@ -52,8 +53,11 @@ except ImportError:
 
 
 def get_frame():
+  # 카메라에서 RGB 이미지를 가져옵니다.
   frame = picam2.capture_array()
-  # [수정포인트 1] 위에서 BGR888로 바로 받으므로, 색상을 꼬이게 하던 cvtColor 변환 줄을 삭제했습니다.
+  # [최종 수정] 가져온 RGB 이미지를 OpenCV가 사용하는 BGR 형식으로 명시적 변환합니다.
+  # 이 줄이 색상 반전을 해결하는 가장 확실한 방법입니다.
+  frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
   return frame
 
 
@@ -113,6 +117,7 @@ try:
     height, width = frame.shape[:2]
 
     if frame_count % FRAME_SKIP == 0:
+      # YOLO 모델은 BGR 이미지를 사용합니다. (get_frame에서 변환 완료)
       last_results = model(frame, conf=0.5, imgsz=640, verbose=False)
     results = last_results
 
@@ -128,13 +133,13 @@ try:
           in_zone = is_in_zone(x1, y1, x2, y2)
           if in_zone:
             danger_detected = True
-            box_color = (0, 0, 255)
+            box_color = (0, 0, 255) # 위험: 빨간색 (BGR)
           else:
-            box_color = (255, 165, 0)
+            box_color = (255, 165, 0) # 안전: 주황색 (BGR)
 
           cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 2)
           
-          # [수정포인트 2] 대소문자 맞춰서 Person 으로 변경
+          # 대소문자 구분하여 Person 표시
           cv2.putText(
               frame,
               f"Person {confidence:.0%}",
@@ -162,7 +167,7 @@ try:
         2,
     )
 
-    # [수정포인트 2] 좌상단 감지 개수 텍스트도 Person 으로 변경
+    # 감지 수 텍스트 (흰색)
     cv2.putText(
         frame,
         f"Person : {obj_count}",
@@ -173,7 +178,7 @@ try:
         2,
     )
 
-    # 위험/안전
+    # 위험/안전 상태 표시
     status, color = (
         ("DANGER", (0, 0, 255)) if danger_detected else ("SAFE", (0, 255, 0))
     )
